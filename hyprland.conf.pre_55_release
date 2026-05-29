@@ -193,7 +193,6 @@ animations {
 
 # See https://wiki.hyprland.org/Configuring/Dwindle-Layout/ for more
 dwindle {
-    pseudotile = true # Master switch for pseudotiling. Enabling is bound to mainMod + P in the keybinds section below
     preserve_split = true # You probably want this
 }
 
@@ -457,10 +456,6 @@ bind = $super, O, setprop, activewindow opaque toggle
 bind = $superShift, mouse_down, workspace, e+1
 bind = $superShift, mouse_up, workspace, e-1
 
-# Move/resize windows with super + LMB/RMB and dragging
-bindm = $super, mouse:272, movewindow
-bindm = $super, mouse:273, resizewindow
-
 # Move focus with mainMod + arrow keys
 bind = $super, left, movefocus, l
 bind = $super, right, movefocus, r
@@ -511,7 +506,7 @@ bind = $superAlt, $defaultKeybind, togglespecialworkspace, $serverSpecialWorkspa
 bind = $moveSpecial, $defaultKeybind, movetoworkspace, special:$serverSpecialWorkspace
 
 
-$secondaryWorkspace=2
+$secondaryWorkspace=II
 $secondaryWorkspaceKeybind=6
 workspace = name:$secondaryWorkspace, monitor:$monitorCenter, default:true
 bind = $super, $secondaryWorkspaceKeybind, workspace, name:$secondaryWorkspace
@@ -557,16 +552,16 @@ bind = $superShift, $entertainmentKeybind, movetoworkspace, name:$entertainmentW
 windowrule = workspace name:$entertainmentWorkspace, match:class (Spotify)
 
 # Mail
-$mailWorkspace=5
+$mailWorkspace=Mail
 $mailKeybind=4
-workspace = name:$mailWorkspace, monitor: $monitorCenter
+workspace = name:$mailWorkspace, monitor:$monitorCenter
 bind = $super, $mailKeybind, workspace, name:$mailWorkspace
 bind = $superShift, $mailKeybind, movetoworkspace, name:$mailWorkspace
 
 # Zoom
 # for_window [app_id="Zoom" title="^zoom$"] floating enable, floating_minimum_size 250 x 400
-windowrule = float 1, match:title ^MainPicker$
-windowrule = float 1, match:class ^(Zoom Workplace)$
+# windowrule = float 1, match:title ^MainPicker$
+# windowrule = float 1, match:class ^(Zoom Workplace)$
 
 
 
