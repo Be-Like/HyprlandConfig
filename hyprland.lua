@@ -1,8 +1,13 @@
+-----------
+-- DEBUG --
+-----------
+-- hl.config({ ["debug.disable_logs"] = false }) -- hyprctl rollinglog -f <-- This allows you to view the lua logs
+
 --------------
 -- MONITORS --
 --------------
 
-local monitorCenter = "DP-1"
+local monitorCenter = "DP-3"
 local monitorLeft = "DP-2"
 
 hl.monitor({
@@ -51,6 +56,7 @@ hl.env("NVD_BACKEND", "direct")
 --------------
 
 local terminal = "alacritty"
+local transparentTerminal = "alacritty -o \"window.opacity=0.64\""
 local fileManager = "dolphin"
 local menu = "~/.config/rofi/launchers/type-6/launcher.sh"
 local screenshot = "~/.config/rofi/applets/bin/screenshot.sh"
@@ -63,10 +69,10 @@ local windowBar = "waybar"
 ---------------
 
 hl.on("hyprland.start", function()
-    hl.exec_cmd("hyprpaper")
+    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
+    hl.exec_cmd("sleep 1 && hyprpaper")
     hl.exec_cmd(notificationDaemon)
     hl.exec_cmd(clipboardManager .. " -listen")
-    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
     hl.exec_cmd(windowBar)
 end)
 
@@ -136,14 +142,14 @@ hl.curve("linear", { type = "bezier", points = { { 0, 0 }, { 1, 1 } } })
 hl.curve("almostLinear", { type = "bezier", points = { { 0.5, 0.5 }, { 0.75, 1 } } })
 hl.curve("quick", { type = "bezier", points = { { 0.15, 0 }, { 0.1, 1 } } })
 
-hl.curve("easy", { type = "spring", mass = 1, stiffness = 71.2633, dampening = 15.8273644 })
+hl.curve("easy", { type = "spring", mass = 1, stiffness = 300.2633, dampening = 25.8273644 })
 
 
 hl.animation({ leaf = "global", enabled = true, speed = 10, bezier = "default" })
 hl.animation({ leaf = "border", enabled = true, speed = 5.39, bezier = "easeOutQuint" })
 hl.animation({ leaf = "windows", enabled = true, speed = 4.79, spring = "easy" })
-hl.animation({ leaf = "windowsIn", enabled = true, speed = 4.1, spring = "easy", style = "popin 87%" })
-hl.animation({ leaf = "windowsOut", enabled = true, speed = 1.49, bezier = "linear", style = "popin 87%" })
+hl.animation({ leaf = "windowsIn", enabled = true, speed = 4.1, spring = "easy", style = "popin 97%" })
+hl.animation({ leaf = "windowsOut", enabled = true, speed = 1.49, bezier = "linear", style = "popin 97%" })
 hl.animation({ leaf = "fadeIn", enabled = true, speed = 1.73, bezier = "almostLinear" })
 hl.animation({ leaf = "fadeOut", enabled = true, speed = 1.46, bezier = "almostLinear" })
 hl.animation({ leaf = "fade", enabled = true, speed = 3.03, bezier = "quick" })
@@ -202,9 +208,27 @@ hl.config({
         sensitivity = -0.9,
 
         touchpad = {
-            natural_scroll = false,
+            natural_scroll = true,
+            tap_to_click = true,
+            clickfinger_behavior = true,
+            scroll_factor = 0.5
         }
     }
+})
+
+
+hl.device({
+    name = "epic-mouse-v1",
+    sensitivity = -0.5
+})
+
+----------------------------
+-- TRACKPAD CONFIGURATION --
+----------------------------
+
+hl.device({
+    name = "apple-inc.-magic-trackpad",
+    sensitivity = 0
 })
 
 hl.gesture({
@@ -213,9 +237,25 @@ hl.gesture({
     action = "workspace"
 })
 
-hl.device({
-    name = "epic-mouse-v1",
-    sensitivity = -0.5
+hl.gesture({
+    fingers = 3,
+    direction = "vertical",
+    scale = 1.5,
+    action = "fullscreen"
+})
+
+hl.gesture({
+    fingers = 4,
+    direction = "down",
+    scale = 1.5,
+    action = "close"
+})
+
+hl.gesture({
+    fingers = 4,
+    direction = "up",
+    scale = 1.5,
+    action = function () hl.exec_cmd(terminal) end
 })
 
 --------------
@@ -223,38 +263,39 @@ hl.device({
 --------------
 local super = "SUPER"
 local superShift = "SUPER + SHIFT"
-local superCtl = "SUPER + Control_L"
+-- local superCtl = "SUPER + Control_L"
 local superAlt = "SUPER + ALT"
 local superAltShift = "SUPER + SHIFT + ALT"
 
 hl.bind(super .. " + Q", hl.dsp.window.close())
 hl.bind(super .. " + T", hl.dsp.exec_cmd(terminal))
+hl.bind(superShift .. " + T", hl.dsp.exec_cmd(transparentTerminal))
 hl.bind(super .. " + backspace",
     hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
-hl.bind(super .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(super .. " + SPACE", hl.dsp.exec_cmd(menu))
 hl.bind(super .. " + F", hl.dsp.exec_cmd(fileManager))
 hl.bind(super .. " + Y", hl.dsp.layout("togglesplit"))
+hl.bind(superShift .. " + C", function()
+    hl.exec_cmd("hyprpicker --autocopy")
+end)
+
+-- Floating a window
+local function toggleFloat()
+    local window = hl.get_active_window()
+    if window == nil then return end
+
+    hl.dispatch(hl.dsp.window.float({ action = "toggle" }))
+
+    if window.floating then
+        hl.dispatch(hl.dsp.window.resize({ x = 1600, y = 1100 }))
+        hl.dispatch(hl.dsp.window.center())
+    end
+end
+
+hl.bind(super .. " + V", toggleFloat)
 
 -- Opacity
-
--- opacityRule:set_enabled(false)
--- opacityRule:set_enabled(true)
--- opacityRule:is_enabled()
--- hl.bind(super .. " + O", hl.dsp.window.set_prop({ active_opacity = 1.0})) -- TODO: I need to figure this out (again)
--- hl.bind(super .. " + O", hl.dsp.) -- TODO: I need to figure this out (again)
--- hl.bind(super .. " + O", hl.dsp.window.set_prop({ prop = "opacity", value = "1.0" }))
-
--- hl.bind(super .. " + O", hl.dispatch(hl.dsp.window.set_prop({ prop = "opacity", value = "0.8" })))
-
-
 local opacityManager = {}
-
-local function getSizeOfOpacityManager()
-    local count = 0
-    for _ in ipairs(opacityManager) do count = count + 1 end
-    return count
-end
 
 local function findIndexOfOpacityManagerWindowByPid(pid)
     for i, value in ipairs(opacityManager) do
@@ -295,8 +336,8 @@ hl.on("window.open", function(w)
     local windowPID = w.pid
 
     if isSpecialWorkspace(w.workspace) then
-        hl.dispatch(hl.dsp.window.set_prop({ prop = "opacity", value = secondaryOpacity }))
-        hl.dispatch(hl.dsp.window.set_prop({ prop = "opacity_inactive", value = secondaryOpacity }))
+        -- hl.dispatch(hl.dsp.window.set_prop({ prop = "opacity", value = secondaryOpacity, window = "pid:" .. windowPID}))
+        -- hl.dispatch(hl.dsp.window.set_prop({ prop = "opacity_inactive", value = secondaryOpacity, window = "pid:" .. windowPID }))
         insertWindowIntoOpacityManager(windowPID, secondaryOpacity)
     else
         insertWindowIntoOpacityManager(windowPID, defaultOpacity)
@@ -304,23 +345,11 @@ hl.on("window.open", function(w)
 
     local count = 0
     for _ in ipairs(opacityManager) do count = count + 1 end
-
-    -- hl.notification.create({
-    --     text = "Workspace created: PID " .. windowPID .. " - Size: " .. getSizeOfOpacityManager(),
-    --     timeout = 4000,
-    --     icon = "ok"
-    -- })
 end)
 
 hl.on("window.close", function(window)
     local windowPID = window.pid
     removeWindowFromOpacityManagerByPid(windowPID)
-
-    -- hl.notification.create({
-    --     text = "Workspace closed: " .. windowPID,
-    --     timeout = 4000,
-    --     icon = "ok"
-    -- })
 end)
 
 
@@ -354,12 +383,56 @@ hl.bind(super .. " + O", function()
             opacityManager[idx][2] = defaultOpacity
         end
     end
+end)
 
-    -- hl.notification.create({
-    --     text = "Opacity toggle: size of workspace" .. getSizeOfOpacityManager(),
-    --     timeout = 4000,
-    --     icon = "ok"
-    -- })
+-- Wallpaper
+local wallpaperSelection = {
+    '/home/jake/wallpapers/basic.jpg',
+    '/home/jake/wallpapers/jinx.png',
+    '/home/jake/wallpapers/batman-red.png',
+    '/home/jake/wallpapers/waifu-red.png',
+    '/home/jake/wallpapers/black-panther.png',
+    '/home/jake/wallpapers/eft-wallpaper.jpg',
+    '/home/jake/wallpapers/miles-morales.png',
+    '/home/jake/wallpapers/batman.png',
+    '/home/jake/wallpapers/sakuna.png',
+
+}
+
+local wallpaperConf = {
+    primary = '/home/jake/wallpapers/basic.jpg',
+    secondary = '/home/jake/wallpapers/basic.jpg'
+}
+
+local function findIndexOfWallpaper(wallpaper)
+    for i, value in ipairs(wallpaperSelection) do
+        if value == wallpaper then
+            return i
+        end
+    end
+
+    return nil
+end
+
+local function toggleWallpaper(monitor, target)
+    local idx = findIndexOfWallpaper(wallpaperConf[target])
+
+    if idx == #wallpaperSelection then
+        wallpaperConf[target] = wallpaperSelection[1]
+    else
+        wallpaperConf[target] = wallpaperSelection[idx + 1]
+    end
+
+    local cmd = string.format("hyprctl hyprpaper wallpaper \"%s,%s\"", monitor, wallpaperConf[target])
+    hl.exec_cmd(cmd)
+end
+
+hl.bind(super .. " + W", function()
+    toggleWallpaper(monitorCenter, 'primary')
+end)
+
+hl.bind(superShift .. " + W", function()
+    toggleWallpaper(monitorLeft, 'secondary')
 end)
 
 -- Mousebinds
@@ -428,8 +501,8 @@ hl.bind(superAltShift .. " + " .. defaultKeybind, hl.dsp.window.move({ workspace
 local secondaryWorkspace = "2"
 local secondaryWorkspaceKeybind = 6
 hl.workspace_rule({ workspace = tostring(secondaryWorkspace), monitor = monitorCenter, default_name = "II" })
-hl.bind(super .. " + " .. secondaryWorkspaceKeybind, hl.dsp.focus({ workspace = secondaryWorkspace }))
-hl.bind(superShift .. " + " .. secondaryWorkspaceKeybind, hl.dsp.window.move({ workspace = secondaryWorkspaceKeybind }))
+hl.bind(super .. " + " .. secondaryWorkspaceKeybind, hl.dsp.focus({ workspace = tostring(secondaryWorkspace) }))
+hl.bind(superShift .. " + " .. secondaryWorkspaceKeybind, hl.dsp.window.move({ workspace = tostring(secondaryWorkspace) }))
 
 local passiveWorkspace = 9
 local passiveWorkspaceKeybind = 0
@@ -457,7 +530,7 @@ hl.bind(superAltShift .. " + " .. sofwareDevelopmentTwoKeybind, hl.dsp.window.mo
 
 local messagingSpecialWorkspace = "Messaging"
 local messagingSpecialKeybind = "m"
-hl.workspace_rule({ workspace = "special:" .. messagingSpecialWorkspace, on_created_empty = "slack && discord" })
+hl.workspace_rule({ workspace = "special:" .. messagingSpecialWorkspace, on_created_empty = "slack" })
 hl.bind(super .. " + " .. messagingSpecialKeybind, hl.dsp.workspace.toggle_special(messagingSpecialWorkspace))
 hl.bind(superAltShift .. " + " .. messagingSpecialKeybind, hl.dsp.window.move({ workspace = "special:" .. messagingSpecialWorkspace }))
 
